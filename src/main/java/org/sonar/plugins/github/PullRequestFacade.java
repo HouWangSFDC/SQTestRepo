@@ -74,6 +74,7 @@ public class PullRequestFacade {
   private Map<Long, GHPullRequestReviewComment> reviewCommentToBeDeletedById = new HashMap<>();
   private File gitBaseDir;
   private String myself;
+  private String debugInfo = "Debug: ";
 
   public PullRequestFacade(GitHubPluginConfiguration config) {
     this.config = config;
@@ -88,15 +89,20 @@ public class PullRequestFacade {
       } else {
         github = new GitHubBuilder().withEndpoint(config.endpoint()).withOAuthToken(config.oauth()).build();
       }
+
       setGhRepo(github.getRepository(config.repository()));
+      debugInfo += config.repository();
       setPr(ghRepo.getPullRequest(pullRequestNumber));
+      debugInfo += pr.getDiffUrl();
+
       LOG.info("Starting analysis of pull request: " + pr.getHtmlUrl());
       myself = github.getMyself().getLogin();
       loadExistingReviewComments();
       patchPositionMappingByFile = mapPatchPositionsToLines(pr);
     } catch (IOException e) {
       LOG.debug("Unable to perform GitHub WS operation", e);
-      throw MessageException.of("Unable to perform GitHub WS operation: " + e.getMessage());
+      String message = "Unable to perform GitHub WS operation: " + e.getMessage() + " " + debugInfo;
+      throw MessageException.of(message);
     }
   }
 
